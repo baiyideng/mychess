@@ -25,9 +25,28 @@ Chessboard::Chessboard(QWidget *parent) :
     ChessPiecesList[10] = new ChessPieces(18,"picture/bpix5.png");
     ChessPiecesList[11] = new ChessPieces(14,"picture/bpix6.png");
 
-
     resize(400,400);
+
+    pbStart = new QPushButton(this);
+    pbStart->setText(QString::fromUtf8("开局"));
+    pbStart->setGeometry(300,50,50,25);
+
+    pbRevoke = new QPushButton(this);
+    pbRevoke->setText(QString::fromUtf8("撤销"));
+    pbRevoke->setGeometry(300,100,50,25);
+
+    pbReset = new QPushButton(this);
+    pbReset->setText(QString::fromUtf8("新一局"));
+    pbReset->setGeometry(300,150,50,25);
+
+    isLayout = true;
+    isChoseSrc = true;
+
+    connect(pbStart,SIGNAL(clicked()),this,SLOT(pbStart_on_clicked()));
+    connect(pbRevoke,SIGNAL(clicked()),this,SLOT(pbRevoke_on_clicked()));
+    connect(pbReset,SIGNAL(clicked()),this,SLOT(pbReset_on_clicked()));
 }
+
 
 void Chessboard::paintEvent(QPaintEvent *)
 {
@@ -52,7 +71,7 @@ void Chessboard::paintEvent(QPaintEvent *)
 
     for(int i = 0;i<12;i++)
     {
-        if(0 <= ChessPiecesList[i]->number_of_location && ChessPiecesList[i]->number_of_location <25)
+        if(0 <= ChessPiecesList[i]->number_of_chessboard && ChessPiecesList[i]->number_of_chessboard <25)
         {
             int nx = number_to_x(ChessPiecesList[i]);
             int ny = number_to_y(ChessPiecesList[i]);
@@ -77,7 +96,6 @@ void Chessboard::mousePressEvent(QMouseEvent *m)
     //QApplication::setOverrideCursor(my); //将鼠标指针更改为自己设置的图片
     setMouseTracking(true);//不跟踪鼠标，点击才计算
 
-    static bool flag_chose_src = true;
    static  int this_number = -1;
 
     if(m->button() == Qt::LeftButton)//鼠标点击函数!!!!外层可嵌套一个if循环bool判断敌走还是我走，敌走调用智能下棋函数
@@ -86,53 +104,130 @@ void Chessboard::mousePressEvent(QMouseEvent *m)
         {
             this_number = x_y_to_number(m->pos().x(),m->pos().y());
 
-            //选择拟走动源棋子
-            if(flag_chose_src)
+            //选择源棋子
+            if(isChoseSrc)
             {
-                for(int i = 0; i < 12; i++)
-                {
-                    if(ChessPiecesList[i]->number_of_location == this_number)
-                    {
-                        src_number_of_ChessPieces = i;
-                        flag_chose_src = false;
-                        break;
-                    }
-                }
-                qDebug()<<"flag_chose_src = "<<flag_chose_src<< "     src_number_of_ChessPieces = "<<src_number_of_ChessPieces;
+                if(__hasChessPieces(this_number,src_NumberOfChessPieces))
+                isChoseSrc = false;
             }
             //选择目标位置
             else
             {
-                laws.resetPuzzles();
-                for(int i = 0; i < 12; i++) laws.updatePuzzles(ChessPiecesList[i]->number_of_location, i);
-
-                if(laws.isLegitimacy(ChessPiecesList[src_number_of_ChessPieces]->number_of_location,this_number))
+                if(isLayout)
                 {
-                 //是否发生吃子
-                    for(int i = 0; i < 12; i++)
-                    {
-                        if(ChessPiecesList[i]->number_of_location == this_number)
-                        {
-                            ChessPiecesList[i]->number_of_location = -1;
-                            break;
-                        }
-                    }
-                    //移动源棋子到目标位置
-                    ChessPiecesList[src_number_of_ChessPieces]->number_of_location = this_number;
-                     flag_chose_src = true;
+                    int des_chessPieces_number = -1;
+                    if(__hasChessPieces(this_number,des_chessPieces_number) && \
+                            __isHomochromy(src_NumberOfChessPieces,des_chessPieces_number))
+                        moveChessPieces_Layout(src_NumberOfChessPieces,des_chessPieces_number);
+                }
+                else
+                {
+                    moveChessPieces(src_NumberOfChessPieces,this_number);
 
                     laws.resetPuzzles();
-                    for(int i = 0; i < 12; i++) laws.updatePuzzles(ChessPiecesList[i]->number_of_location, i);
+                    for(int i = 0; i < 12; i++) laws.updatePuzzles(ChessPiecesList[i]->number_of_chessboard, i);
                     int winer;
-                    if(laws.isWin(winer)){}
+                    if(laws.isWin(winer))
+                    {
 
-                    this->repaint();  //调用paintvent函数绘图
+                    }
                 }
+
+                this->repaint();  //调用paintvent函数绘图
+
             }
         }
     }
 
 }
+
+void Chessboard::moveChessPieces(int src_chessPieces_number, int des_chessboard_number)
+{
+    laws.resetPuzzles();
+    for(int i = 0; i < 12; i++) laws.updatePuzzles(ChessPiecesList[i]->number_of_chessboard, i);
+
+    if(laws.isLegitimacy(ChessPiecesList[src_chessPieces_number]->number_of_chessboard,des_chessboard_number))
+    {
+        int des_chessPieces_number = -1;
+        if(__hasChessPieces(des_chessboard_number, des_chessPieces_number))
+            ChessPiecesList[des_chessPieces_number]->number_of_chessboard = -1;
+
+        ChessPiecesList[src_chessPieces_number]->number_of_chessboard = des_chessboard_number;
+    }
+
+    isChoseSrc = true;
+}
+
+
+void Chessboard::moveChessPieces_Layout(int src_chessPieces_number, int des_chessPieces_number)
+{
+    int tmp = ChessPiecesList[des_chessPieces_number]->number_of_chessboard;
+    ChessPiecesList[des_chessPieces_number]->number_of_chessboard = ChessPiecesList[src_chessPieces_number]->number_of_chessboard;
+    ChessPiecesList[src_chessPieces_number]->number_of_chessboard = tmp;
+
+    isChoseSrc = true;
+}
+
+void Chessboard::pbStart_on_clicked()
+{
+    pbStart->setDisabled(true);
+    isLayout = false;
+}
+
+void Chessboard::pbRevoke_on_clicked()
+{
+
+}
+
+void Chessboard::pbReset_on_clicked()
+{
+    pbStart->setEnabled(true);
+    isLayout = true;
+    isChoseSrc = true;
+
+    ChessPiecesList[0]->number_of_chessboard = 0;
+    ChessPiecesList[1]->number_of_chessboard = 1;
+    ChessPiecesList[2]->number_of_chessboard = 5;
+    ChessPiecesList[3]->number_of_chessboard = 2;
+    ChessPiecesList[4]->number_of_chessboard = 6;
+    ChessPiecesList[5]->number_of_chessboard = 10;
+
+    ChessPiecesList[6]->number_of_chessboard = 24;
+    ChessPiecesList[7]->number_of_chessboard = 23;
+    ChessPiecesList[8]->number_of_chessboard = 19;
+    ChessPiecesList[9]->number_of_chessboard = 22;
+    ChessPiecesList[10]->number_of_chessboard = 18;
+    ChessPiecesList[11]->number_of_chessboard = 14;
+
+    this->repaint();
+}
+
+
+bool Chessboard::__isHomochromy(int src_chessPieces_number, int des_chessPieces_number)
+{
+    if((0 <= src_chessPieces_number && src_chessPieces_number < 6 && \
+        0 <= des_chessPieces_number && des_chessPieces_number <6) \
+            || \
+       (6 <= src_chessPieces_number && src_chessPieces_number < 12 && \
+        6 <= des_chessPieces_number && des_chessPieces_number < 12) )
+        return true;
+    else return false;
+}
+
+bool Chessboard::__hasChessPieces(int chessboard_number, int &ret_chessPieces_number)
+{
+    for(int i = 0; i < 12; i++)
+    {
+        if(ChessPiecesList[i]->number_of_chessboard == chessboard_number)
+        {
+            ret_chessPieces_number = i;
+            return true;
+        }
+    }
+    return false;
+}
+
+
 
 int Chessboard::x_y_to_number(int x, int y)
 {

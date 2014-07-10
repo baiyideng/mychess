@@ -23,7 +23,7 @@
 */
 
 #include <QWidget>
-
+#include <QtWidgets/QPushButton>
 #include "chesspieces.h"
 #include"laws.h"
 
@@ -32,6 +32,7 @@ class Chessboard : public QWidget
     Q_OBJECT
 public:
     explicit Chessboard(QWidget *parent = 0);
+    void moveChessPieces(int src_chessPieces_number,int des_chessboard_number);
     void paintEvent(QPaintEvent *);
     void mousePressEvent(QMouseEvent *m);  //mousemoveevent为鼠标拖拽函数
 
@@ -40,15 +41,27 @@ public:
 signals:
 
 public slots:
+    void pbStart_on_clicked();
+    void pbRevoke_on_clicked();
+    void pbReset_on_clicked();
 
 private:
-    int number_to_x(ChessPieces* cp){return 50 * (cp->number_of_location % 5);}
-    int number_to_y(ChessPieces* cp){ return 50 * (cp->number_of_location / 5);}
+    bool __isHomochromy(int src_chessPieces_number,int des_chessPieces_number);
+    bool __hasChessPieces(int chessboard_number , int &ret_chessPieces_number);
+    void moveChessPieces_Layout(int src_chessPieces_number,int des_chessPieces_number);
+    int number_to_x(ChessPieces* cp){return 50 * (cp->number_of_chessboard % 5);}
+    int number_to_y(ChessPieces* cp){ return 50 * (cp->number_of_chessboard / 5);}
     int x_y_to_number(int x, int y);
 
-    int src_number_of_ChessPieces;
-    int des_number_of_Chessboard;
+    int src_NumberOfChessPieces;
+
     Laws laws;
+
+    bool isChoseSrc;
+    bool isLayout;      //正式开始前的棋子布局状态
+    QPushButton* pbStart;
+    QPushButton* pbRevoke;
+    QPushButton* pbReset;
 
 };
 
