@@ -24,6 +24,8 @@
 
 #include <QWidget>
 #include <QtWidgets/QPushButton>
+#include <QtWidgets/QLineEdit>
+#include <QIntValidator>
 #include "chesspieces.h"
 #include"laws.h"
 
@@ -53,6 +55,7 @@ public slots:
     void pbStart_on_clicked();
     void pbRevoke_on_clicked();
     void pbReset_on_clicked();
+    void pbAI_on_clicked();
 
 private:
     bool __isHomochromy(int src_chessPieces_number,int des_chessPieces_number);
@@ -81,6 +84,9 @@ private:
     QPushButton* pbReset;
     int lastStatus[12];
 
+    QLineEdit* peInputNumber;
+    QPushButton* pbAI;
+    QIntValidator *inputLimit;
 };
 
 #endif // CHESSBOARD_H

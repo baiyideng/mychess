@@ -9,6 +9,7 @@
 #include<QMouseEvent>
 #include<QtWidgets/QMessageBox>
 
+
 Chessboard::Chessboard(QWidget *parent) :
     QWidget(parent)
 {
@@ -41,9 +42,20 @@ Chessboard::Chessboard(QWidget *parent) :
     pbReset->setText(QString::fromUtf8("新一局"));
     pbReset->setGeometry(300,150,50,25);
 
+    pbAI = new QPushButton(this);
+    pbAI->setText(QString::fromUtf8("行棋"));
+    pbAI->setGeometry(150,300,50,25);
+
+    peInputNumber = new QLineEdit(this);
+    peInputNumber->setGeometry(50,300,50,25);
+
+    inputLimit = new QIntValidator(1,6,this);
+    peInputNumber->setValidator(inputLimit);
+
     isLayout = true;
     isChoseSrc = true;
     whoseTurn = OUT_OF_PLAYER;
+
 
     connect(pbStart,SIGNAL(clicked()),this,SLOT(pbStart_on_clicked()));
     connect(pbRevoke,SIGNAL(clicked()),this,SLOT(pbRevoke_on_clicked()));
@@ -155,6 +167,10 @@ void Chessboard::moveChessPieces( int des_chessboard_number)
             ChessPiecesList[des_chessPieces_number]->number_of_chessboard = OUT_OF_CHESSBOARD;
 
         ChessPiecesList[src_NumberOfChessPieces]->number_of_chessboard = des_chessboard_number;
+        if(whoseTurn == RED)
+            whoseTurn = BLUE;
+        else if(whoseTurn == BLUE)
+            whoseTurn = RED;
     }
 
     if(src_NumberOfChessPieces != OUT_OF_CHESSPIECES)
@@ -219,6 +235,11 @@ void Chessboard::pbReset_on_clicked()
     this->repaint();
 }
 
+void Chessboard::pbAI_on_clicked()
+{
+    int number = peInputNumber->text().toInt();
+}
+
 
 bool Chessboard::__isHomochromy(int src_chessPieces_number, int des_chessPieces_number)
 {
@@ -246,26 +267,21 @@ bool Chessboard::__hasChessPieces(int chessboard_number, int &ret_chessPieces_nu
 
 bool Chessboard::__isMyTurn()
 {
-    if(whoseTurn == OUT_OF_PLAYER)
+    if(whoseTurn == OUT_OF_PLAYER)    //第一次行棋时未规定谁先手，可任意。
     {
+        //whoseTurn设为当前行棋方是因为whoseTurn的改变由moveChessPieces()函数完成。
         if(0 <= src_NumberOfChessPieces && src_NumberOfChessPieces < 6)
-            whoseTurn = BLUE;
-        else if(6 <= src_NumberOfChessPieces && src_NumberOfChessPieces <12)
             whoseTurn = RED;
+        else if(6 <= src_NumberOfChessPieces && src_NumberOfChessPieces <12)
+            whoseTurn = BLUE;
         else return false;
 
         return true;
     }
     else if(whoseTurn == RED && 0 <= src_NumberOfChessPieces && src_NumberOfChessPieces < 6)
-    {
-        whoseTurn = BLUE;
         return true;
-    }
     else if (whoseTurn == BLUE && 6 <= src_NumberOfChessPieces && src_NumberOfChessPieces <12)
-    {
-        whoseTurn = RED;
         return true;
-    }
     else return false;
 }
 
