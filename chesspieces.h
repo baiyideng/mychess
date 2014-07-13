@@ -10,10 +10,12 @@ public:
     {
         number_of_chessboard = number;
         pix.load(str_Location_Picture);
+        isChosed = false;
     }
 
     int number_of_chessboard;
     QPixmap pix;
+    bool isChosed;
 };
 
 #endif // CHESSPIECES_H

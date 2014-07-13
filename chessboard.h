@@ -32,11 +32,20 @@ class Chessboard : public QWidget
     Q_OBJECT
 public:
     explicit Chessboard(QWidget *parent = 0);
-    void moveChessPieces(int src_chessPieces_number,int des_chessboard_number);
+    void moveChessPieces(int des_chessboard_number);
     void paintEvent(QPaintEvent *);
     void mousePressEvent(QMouseEvent *m);  //mousemoveevent为鼠标拖拽函数
 
-    ChessPieces *ChessPiecesList[12];
+    ChessPieces* ChessPiecesList[12];
+
+    enum StatusFlages
+    {
+        OUT_OF_CHESSBOARD = -1,
+        OUT_OF_CHESSPIECES = -1,
+        OUT_OF_PLAYER = -1,
+        RED = 5,
+        BLUE = 11,
+    };
 
 signals:
 
@@ -48,20 +57,29 @@ public slots:
 private:
     bool __isHomochromy(int src_chessPieces_number,int des_chessPieces_number);
     bool __hasChessPieces(int chessboard_number , int &ret_chessPieces_number);
-    void moveChessPieces_Layout(int src_chessPieces_number,int des_chessPieces_number);
+    bool __isMyTurn();
+
+    void moveChessPieces_Layout(int des_chessPieces_number);
+
     int number_to_x(ChessPieces* cp){return 50 * (cp->number_of_chessboard % 5);}
     int number_to_y(ChessPieces* cp){ return 50 * (cp->number_of_chessboard / 5);}
-    int x_y_to_number(int x, int y);
+    int x_y_to_number(int x, int y);    //return the number of chessboard
+
+    void __saveInstantane();
+    void __recoverFromInstantane();
 
     int src_NumberOfChessPieces;
 
     Laws laws;
+
+    int whoseTurn;
 
     bool isChoseSrc;
     bool isLayout;      //正式开始前的棋子布局状态
     QPushButton* pbStart;
     QPushButton* pbRevoke;
     QPushButton* pbReset;
+    int lastStatus[12];
 
 };
 

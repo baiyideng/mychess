@@ -1,8 +1,10 @@
 #include "laws.h"
 
+#include "chessboard.h"
+
 Laws::Laws()
 {
-    puzzles[25] = {12};
+    puzzles[25] = {NULLPIECES};
 }
 
 bool Laws::isLegitimacy(int src, int des)
@@ -37,12 +39,12 @@ bool Laws::isWin(int &winer)
 {
     if(6 <= puzzles[0] && puzzles[0] <12)
     {
-        winer = 5;
+        winer = Chessboard::BLUE;
         return true;
     }
     else if(0 <= puzzles[24] && puzzles[24] <6)
     {
-        winer = 11;
+        winer = Chessboard::RED;
         return true;
     }
     else
@@ -57,7 +59,7 @@ bool Laws::isWin(int &winer)
         }
         if(redWin)
         {
-            winer = 5;
+            winer = Chessboard::RED;
             return true;
         }
 
@@ -71,7 +73,7 @@ bool Laws::isWin(int &winer)
         }
         if(blueWin)
         {
-            winer = 11;
+            winer = Chessboard::BLUE;
             return true;
         }
 
@@ -79,14 +81,16 @@ bool Laws::isWin(int &winer)
     }
 }
 
-void Laws::updatePuzzles(int pos, int val)
+void Laws::updatePuzzles(ChessPieces **chessPiecesList)
 {
-    puzzles[pos] = val;
+    for(int i = 0; i < 25; i++) puzzles[i] = NULLPIECES ;
+    for(int i = 0; i < 12; i++)
+    {
+        if(chessPiecesList[i]->number_of_chessboard != Chessboard::OUT_OF_CHESSBOARD)
+            puzzles[chessPiecesList[i]->number_of_chessboard] = i;
+        this->chessPiecesList[i] = chessPiecesList[i]->number_of_chessboard;
+    }
 }
 
-void Laws::resetPuzzles()
-{
-    for(int i = 0; i < 25; i++) puzzles[i] = 12;
-}
 
 

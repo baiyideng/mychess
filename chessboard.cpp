@@ -7,6 +7,7 @@
 #include <QtWidgets/QApplication>
 #include<QtWidgets/QLabel>
 #include<QMouseEvent>
+#include<QtWidgets/QMessageBox>
 
 Chessboard::Chessboard(QWidget *parent) :
     QWidget(parent)
@@ -34,6 +35,7 @@ Chessboard::Chessboard(QWidget *parent) :
     pbRevoke = new QPushButton(this);
     pbRevoke->setText(QString::fromUtf8("撤销"));
     pbRevoke->setGeometry(300,100,50,25);
+    pbRevoke->setDisabled(true);
 
     pbReset = new QPushButton(this);
     pbReset->setText(QString::fromUtf8("新一局"));
@@ -41,6 +43,7 @@ Chessboard::Chessboard(QWidget *parent) :
 
     isLayout = true;
     isChoseSrc = true;
+    whoseTurn = OUT_OF_PLAYER;
 
     connect(pbStart,SIGNAL(clicked()),this,SLOT(pbStart_on_clicked()));
     connect(pbRevoke,SIGNAL(clicked()),this,SLOT(pbRevoke_on_clicked()));
@@ -50,12 +53,11 @@ Chessboard::Chessboard(QWidget *parent) :
 
 void Chessboard::paintEvent(QPaintEvent *)
 {
-    // 画一条直线
     QPainter painter(this);             // 创建QPainter一个对象
     QPen pen;
     pen.setColor(Qt::black);           // 设置画笔为黑色，painter一定要在paintEvent中才可以执行，不需被调用
     painter.setPen(pen);
-    // 设置画笔
+    // 绘制棋盘
     painter.drawLine(0, 0, 0, 250);
     painter.drawLine(50, 0, 50, 250);
     painter.drawLine(100, 0, 100, 250);
@@ -76,15 +78,10 @@ void Chessboard::paintEvent(QPaintEvent *)
             int nx = number_to_x(ChessPiecesList[i]);
             int ny = number_to_y(ChessPiecesList[i]);
 
-            if(nx>=200)  //解决棋子与网格边界问题
-            {
-                nx = 200;
-            }
-            if(ny>=200)
-            {
-                ny = 200;
-            }
-            painter.drawPixmap(nx,ny,49,49,ChessPiecesList[i]->pix);
+            if(ChessPiecesList[i]->isChosed)
+                painter.drawPixmap(nx,ny,40,40,ChessPiecesList[i]->pix);
+            else
+                painter.drawPixmap(nx,ny,49,49,ChessPiecesList[i]->pix);
 
         }
     }
@@ -96,7 +93,7 @@ void Chessboard::mousePressEvent(QMouseEvent *m)
     //QApplication::setOverrideCursor(my); //将鼠标指针更改为自己设置的图片
     setMouseTracking(true);//不跟踪鼠标，点击才计算
 
-   static  int this_number = -1;
+   static  int this_number = OUT_OF_CHESSBOARD;
 
     if(m->button() == Qt::LeftButton)//鼠标点击函数!!!!外层可嵌套一个if循环bool判断敌走还是我走，敌走调用智能下棋函数
     {
@@ -108,75 +105,92 @@ void Chessboard::mousePressEvent(QMouseEvent *m)
             if(isChoseSrc)
             {
                 if(__hasChessPieces(this_number,src_NumberOfChessPieces))
-                isChoseSrc = false;
+                {
+                    if(!isLayout && (!__isMyTurn())) return;
+                    isChoseSrc = false;
+                    ChessPiecesList[src_NumberOfChessPieces]->isChosed = true;
+                }
             }
             //选择目标位置
             else
             {
                 if(isLayout)
                 {
-                    int des_chessPieces_number = -1;
+                    int des_chessPieces_number = OUT_OF_CHESSBOARD;
                     if(__hasChessPieces(this_number,des_chessPieces_number) && \
                             __isHomochromy(src_NumberOfChessPieces,des_chessPieces_number))
-                        moveChessPieces_Layout(src_NumberOfChessPieces,des_chessPieces_number);
+                        moveChessPieces_Layout(des_chessPieces_number);
                 }
                 else
                 {
-                    moveChessPieces(src_NumberOfChessPieces,this_number);
+                    moveChessPieces(this_number);
 
-                    laws.resetPuzzles();
-                    for(int i = 0; i < 12; i++) laws.updatePuzzles(ChessPiecesList[i]->number_of_chessboard, i);
+                     laws.updatePuzzles(ChessPiecesList);
                     int winer;
                     if(laws.isWin(winer))
                     {
-
+                        if(winer == RED)
+                            QMessageBox::information(this,"win","红方获胜",QMessageBox::Ok);
+                        else if(winer == BLUE)
+                            QMessageBox::information(this,"win","蓝方获胜",QMessageBox::Ok);
                     }
                 }
-
-                this->repaint();  //调用paintvent函数绘图
-
             }
+            this->repaint();  //调用paintvent函数绘图
         }
     }
 
 }
 
-void Chessboard::moveChessPieces(int src_chessPieces_number, int des_chessboard_number)
+void Chessboard::moveChessPieces( int des_chessboard_number)
 {
-    laws.resetPuzzles();
-    for(int i = 0; i < 12; i++) laws.updatePuzzles(ChessPiecesList[i]->number_of_chessboard, i);
+    __saveInstantane();
+    laws.updatePuzzles(ChessPiecesList);
 
-    if(laws.isLegitimacy(ChessPiecesList[src_chessPieces_number]->number_of_chessboard,des_chessboard_number))
+    if(laws.isLegitimacy(ChessPiecesList[src_NumberOfChessPieces]->number_of_chessboard,des_chessboard_number))
     {
-        int des_chessPieces_number = -1;
+        __saveInstantane();
+        int des_chessPieces_number = OUT_OF_CHESSPIECES;
         if(__hasChessPieces(des_chessboard_number, des_chessPieces_number))
-            ChessPiecesList[des_chessPieces_number]->number_of_chessboard = -1;
+            ChessPiecesList[des_chessPieces_number]->number_of_chessboard = OUT_OF_CHESSBOARD;
 
-        ChessPiecesList[src_chessPieces_number]->number_of_chessboard = des_chessboard_number;
+        ChessPiecesList[src_NumberOfChessPieces]->number_of_chessboard = des_chessboard_number;
     }
 
+    if(src_NumberOfChessPieces != OUT_OF_CHESSPIECES)
+        ChessPiecesList[src_NumberOfChessPieces]->isChosed = false;
+
+    src_NumberOfChessPieces = OUT_OF_CHESSPIECES;
     isChoseSrc = true;
 }
 
 
-void Chessboard::moveChessPieces_Layout(int src_chessPieces_number, int des_chessPieces_number)
+void Chessboard::moveChessPieces_Layout(int des_chessPieces_number)
 {
     int tmp = ChessPiecesList[des_chessPieces_number]->number_of_chessboard;
-    ChessPiecesList[des_chessPieces_number]->number_of_chessboard = ChessPiecesList[src_chessPieces_number]->number_of_chessboard;
-    ChessPiecesList[src_chessPieces_number]->number_of_chessboard = tmp;
+    ChessPiecesList[des_chessPieces_number]->number_of_chessboard = ChessPiecesList[src_NumberOfChessPieces]->number_of_chessboard;
+    ChessPiecesList[src_NumberOfChessPieces]->number_of_chessboard = tmp;
 
     isChoseSrc = true;
+    ChessPiecesList[src_NumberOfChessPieces]->isChosed = false;
 }
 
 void Chessboard::pbStart_on_clicked()
 {
     pbStart->setDisabled(true);
     isLayout = false;
+    __saveInstantane();
+    pbRevoke->setEnabled(true);
 }
 
 void Chessboard::pbRevoke_on_clicked()
 {
+    if(src_NumberOfChessPieces != OUT_OF_CHESSPIECES)
+        ChessPiecesList[src_NumberOfChessPieces]->isChosed = false;
+    src_NumberOfChessPieces = OUT_OF_CHESSPIECES;
+    isChoseSrc = true;
 
+    __recoverFromInstantane();
 }
 
 void Chessboard::pbReset_on_clicked()
@@ -184,6 +198,8 @@ void Chessboard::pbReset_on_clicked()
     pbStart->setEnabled(true);
     isLayout = true;
     isChoseSrc = true;
+    whoseTurn = OUT_OF_PLAYER;
+
 
     ChessPiecesList[0]->number_of_chessboard = 0;
     ChessPiecesList[1]->number_of_chessboard = 1;
@@ -197,7 +213,8 @@ void Chessboard::pbReset_on_clicked()
     ChessPiecesList[8]->number_of_chessboard = 19;
     ChessPiecesList[9]->number_of_chessboard = 22;
     ChessPiecesList[10]->number_of_chessboard = 18;
-    ChessPiecesList[11]->number_of_chessboard = 14;
+    ChessPiecesList[11]->number_of_chessboard = 14;   
+    for(int i = 0; i < 12; i++) ChessPiecesList[i]->isChosed = false;
 
     this->repaint();
 }
@@ -227,11 +244,34 @@ bool Chessboard::__hasChessPieces(int chessboard_number, int &ret_chessPieces_nu
     return false;
 }
 
+bool Chessboard::__isMyTurn()
+{
+    if(whoseTurn == OUT_OF_PLAYER)
+    {
+        if(0 <= src_NumberOfChessPieces && src_NumberOfChessPieces < 6)
+            whoseTurn = BLUE;
+        else if(6 <= src_NumberOfChessPieces && src_NumberOfChessPieces <12)
+            whoseTurn = RED;
+        else return false;
 
+        return true;
+    }
+    else if(whoseTurn == RED && 0 <= src_NumberOfChessPieces && src_NumberOfChessPieces < 6)
+    {
+        whoseTurn = BLUE;
+        return true;
+    }
+    else if (whoseTurn == BLUE && 6 <= src_NumberOfChessPieces && src_NumberOfChessPieces <12)
+    {
+        whoseTurn = RED;
+        return true;
+    }
+    else return false;
+}
 
 int Chessboard::x_y_to_number(int x, int y)
 {
-    int number = -1;
+    int number = OUT_OF_CHESSBOARD;
     if(0 <= x && x < 250)
     {
         if(0 <= y && y <250)
@@ -239,6 +279,25 @@ int Chessboard::x_y_to_number(int x, int y)
     }
 
     return number;
+}
+
+void Chessboard::__saveInstantane()
+{
+    for(int i = 0; i < 12; i++)
+        lastStatus[i] = ChessPiecesList[i]->number_of_chessboard;
+}
+
+void Chessboard::__recoverFromInstantane()
+{
+    for(int i = 0; i < 12; i++)
+        ChessPiecesList[i]->number_of_chessboard = lastStatus[i];
+
+    if(whoseTurn == RED)
+        whoseTurn = BLUE;
+    else if(whoseTurn == BLUE)
+        whoseTurn = RED;
+
+    this->repaint();
 }
 
 

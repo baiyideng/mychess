@@ -14,9 +14,11 @@ TEMPLATE = app
 
 SOURCES += main.cpp \
     laws.cpp \
-    chessboard.cpp
+    chessboard.cpp \
+    log.cpp
 
 HEADERS  += \
     laws.h \
     chesspieces.h \
-    chessboard.h
+    chessboard.h \
+    log.h
