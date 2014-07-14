@@ -4,6 +4,7 @@
 #include<deque>
 #include <QFile>
 #include <QTextStream>
+#include <QDateTime>
 
 #define MAX_COUNT 20
 
@@ -38,6 +39,7 @@ private:
 
   QFile* logFile;
   QTextStream* out;
+  QDateTime dateTime;
 };
 
 #endif // LOG_H

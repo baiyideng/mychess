@@ -8,24 +8,26 @@
 #include<QtWidgets/QLabel>
 #include<QMouseEvent>
 #include<QtWidgets/QMessageBox>
+#include <QPalette>
+#include <QFont>
 
 
 Chessboard::Chessboard(QWidget *parent) :
     QWidget(parent)
 {
-    ChessPiecesList[0] = new ChessPieces(0,"picture/rpix1.png");
-    ChessPiecesList[1] = new ChessPieces(1,"picture/rpix2.png");
-    ChessPiecesList[2] = new ChessPieces(5,"picture/rpix3.png");
-    ChessPiecesList[3] = new ChessPieces(2,"picture/rpix4.png");
-    ChessPiecesList[4] = new ChessPieces(6,"picture/rpix5.png");
-    ChessPiecesList[5] = new ChessPieces(10,"picture/rpix6.png");
+    ChessPiecesList[0] = new ChessPieces(0,this);
+    ChessPiecesList[1] = new ChessPieces(1,this);
+    ChessPiecesList[2] = new ChessPieces(5,this);
+    ChessPiecesList[3] = new ChessPieces(2,this);
+    ChessPiecesList[4] = new ChessPieces(6,this);
+    ChessPiecesList[5] = new ChessPieces(10,this);
 
-    ChessPiecesList[6] = new ChessPieces(24,"picture/bpix1.png");
-    ChessPiecesList[7] = new ChessPieces(23,"picture/bpix2.png");
-    ChessPiecesList[8] = new ChessPieces(19,"picture/bpix3.png");
-    ChessPiecesList[9] = new ChessPieces(22,"picture/bpix4.png");
-    ChessPiecesList[10] = new ChessPieces(18,"picture/bpix5.png");
-    ChessPiecesList[11] = new ChessPieces(14,"picture/bpix6.png");
+    ChessPiecesList[6] = new ChessPieces(24,this);
+    ChessPiecesList[7] = new ChessPieces(23,this);
+    ChessPiecesList[8] = new ChessPieces(19,this);
+    ChessPiecesList[9] = new ChessPieces(22,this);
+    ChessPiecesList[10] = new ChessPieces(18,this);
+    ChessPiecesList[11] = new ChessPieces(14,this);
 
     resize(400,400);
 
@@ -45,21 +47,24 @@ Chessboard::Chessboard(QWidget *parent) :
     pbAI = new QPushButton(this);
     pbAI->setText(QString::fromUtf8("行棋"));
     pbAI->setGeometry(150,300,50,25);
+    pbAI->setEnabled(false);
 
     peInputNumber = new QLineEdit(this);
     peInputNumber->setGeometry(50,300,50,25);
-
-    inputLimit = new QIntValidator(1,6,this);
-    peInputNumber->setValidator(inputLimit);
 
     isLayout = true;
     isChoseSrc = true;
     whoseTurn = OUT_OF_PLAYER;
 
-
+    connect(peInputNumber,SIGNAL(textChanged(QString)),this,SLOT(peInputNumber_text_changed(QString)));
     connect(pbStart,SIGNAL(clicked()),this,SLOT(pbStart_on_clicked()));
     connect(pbRevoke,SIGNAL(clicked()),this,SLOT(pbRevoke_on_clicked()));
     connect(pbReset,SIGNAL(clicked()),this,SLOT(pbReset_on_clicked()));
+    connect(pbAI,SIGNAL(clicked()),this,SLOT(pbAI_on_clicked()));
+}
+
+Chessboard::~Chessboard()
+{
 }
 
 
@@ -83,19 +88,38 @@ void Chessboard::paintEvent(QPaintEvent *)
     painter.drawLine(0, 200, 250, 200);
     painter.drawLine(0, 250, 250, 250);
 
+    QPalette pal;
+    pal.setColor(QPalette::Background, Qt::red);
+
     for(int i = 0;i<12;i++)
-    {
-        if(0 <= ChessPiecesList[i]->number_of_chessboard && ChessPiecesList[i]->number_of_chessboard <25)
-        {
+    {      
             int nx = number_to_x(ChessPiecesList[i]);
             int ny = number_to_y(ChessPiecesList[i]);
 
             if(ChessPiecesList[i]->isChosed)
-                painter.drawPixmap(nx,ny,40,40,ChessPiecesList[i]->pix);
+                ChessPiecesList[i]->pLabel->setGeometry(nx,ny,40,40);
             else
-                painter.drawPixmap(nx,ny,49,49,ChessPiecesList[i]->pix);
+                ChessPiecesList[i]->pLabel->setGeometry(nx,ny,49,49);
 
-        }
+            if(i < 6)
+            {
+                ChessPiecesList[i]->pLabel->setStyleSheet("background:blue;");
+                ChessPiecesList[i]->pLabel->setText(QString::number(i+1));
+            }
+            else if (i > 5)
+            {
+                ChessPiecesList[i]->pLabel->setStyleSheet("background:red;");
+                ChessPiecesList[i]->pLabel->setText(QString::number(i-5));
+            }
+
+            ChessPiecesList[i]->pLabel->setAlignment(Qt::AlignCenter);
+            ChessPiecesList[i]->pLabel->setFont(QFont("",20));
+
+            if(ChessPiecesList[i]->number_of_chessboard == OUT_OF_CHESSBOARD)
+               ChessPiecesList[i]->pLabel->setVisible(false);
+            else
+                ChessPiecesList[i]->pLabel->setVisible(true);
+
     }
 }
 
@@ -105,7 +129,7 @@ void Chessboard::mousePressEvent(QMouseEvent *m)
     //QApplication::setOverrideCursor(my); //将鼠标指针更改为自己设置的图片
     setMouseTracking(true);//不跟踪鼠标，点击才计算
 
-   static  int this_number = OUT_OF_CHESSBOARD;
+    static  int this_number = OUT_OF_CHESSBOARD;
 
     if(m->button() == Qt::LeftButton)//鼠标点击函数!!!!外层可嵌套一个if循环bool判断敌走还是我走，敌走调用智能下棋函数
     {
@@ -137,7 +161,7 @@ void Chessboard::mousePressEvent(QMouseEvent *m)
                 {
                     moveChessPieces(this_number);
 
-                     laws.updatePuzzles(ChessPiecesList);
+                    laws.updatePuzzles(ChessPiecesList);
                     int winer;
                     if(laws.isWin(winer))
                     {
@@ -164,7 +188,9 @@ void Chessboard::moveChessPieces( int des_chessboard_number)
         __saveInstantane();
         int des_chessPieces_number = OUT_OF_CHESSPIECES;
         if(__hasChessPieces(des_chessboard_number, des_chessPieces_number))
+        {
             ChessPiecesList[des_chessPieces_number]->number_of_chessboard = OUT_OF_CHESSBOARD;
+        }
 
         ChessPiecesList[src_NumberOfChessPieces]->number_of_chessboard = des_chessboard_number;
         if(whoseTurn == RED)
@@ -229,7 +255,7 @@ void Chessboard::pbReset_on_clicked()
     ChessPiecesList[8]->number_of_chessboard = 19;
     ChessPiecesList[9]->number_of_chessboard = 22;
     ChessPiecesList[10]->number_of_chessboard = 18;
-    ChessPiecesList[11]->number_of_chessboard = 14;   
+    ChessPiecesList[11]->number_of_chessboard = 14;
     for(int i = 0; i < 12; i++) ChessPiecesList[i]->isChosed = false;
 
     this->repaint();
@@ -238,6 +264,24 @@ void Chessboard::pbReset_on_clicked()
 void Chessboard::pbAI_on_clicked()
 {
     int number = peInputNumber->text().toInt();
+    peInputNumber_text_changed(0);
+}
+
+void Chessboard::peInputNumber_text_changed(QString str)
+{
+    bool ok;
+    str=str.left(1);
+    int num=str.toInt(&ok);
+    if(!ok||(num<1||num>6))
+    {
+        peInputNumber->clear();
+        pbAI->setEnabled(false);
+    }
+    else
+    {
+        peInputNumber->setText(str);
+        pbAI->setEnabled(true);
+    }
 }
 
 
@@ -246,8 +290,8 @@ bool Chessboard::__isHomochromy(int src_chessPieces_number, int des_chessPieces_
     if((0 <= src_chessPieces_number && src_chessPieces_number < 6 && \
         0 <= des_chessPieces_number && des_chessPieces_number <6) \
             || \
-       (6 <= src_chessPieces_number && src_chessPieces_number < 12 && \
-        6 <= des_chessPieces_number && des_chessPieces_number < 12) )
+            (6 <= src_chessPieces_number && src_chessPieces_number < 12 && \
+             6 <= des_chessPieces_number && des_chessPieces_number < 12) )
         return true;
     else return false;
 }

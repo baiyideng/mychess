@@ -25,7 +25,6 @@
 #include <QWidget>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QLineEdit>
-#include <QIntValidator>
 #include "chesspieces.h"
 #include"laws.h"
 
@@ -34,6 +33,7 @@ class Chessboard : public QWidget
     Q_OBJECT
 public:
     explicit Chessboard(QWidget *parent = 0);
+    virtual ~Chessboard();
     void moveChessPieces(int des_chessboard_number);
     void paintEvent(QPaintEvent *);
     void mousePressEvent(QMouseEvent *m);  //mousemoveevent为鼠标拖拽函数
@@ -56,6 +56,7 @@ public slots:
     void pbRevoke_on_clicked();
     void pbReset_on_clicked();
     void pbAI_on_clicked();
+    void peInputNumber_text_changed(QString str);
 
 private:
     bool __isHomochromy(int src_chessPieces_number,int des_chessPieces_number);
@@ -86,7 +87,6 @@ private:
 
     QLineEdit* peInputNumber;
     QPushButton* pbAI;
-    QIntValidator *inputLimit;
 };
 
 #endif // CHESSBOARD_H

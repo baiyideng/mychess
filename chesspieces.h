@@ -1,20 +1,21 @@
 #ifndef CHESSPIECES_H
 #define CHESSPIECES_H
 
-#include <QPixmap>
+#include <QtWidgets/QLabel>
 
 class ChessPieces
 {
 public:
-    ChessPieces(int number, QString str_Location_Picture)
+    ChessPieces(int number, QWidget *parent = 0)
     {
         number_of_chessboard = number;
-        pix.load(str_Location_Picture);
+        pLabel = new QLabel(parent);
         isChosed = false;
     }
+    virtual ~ChessPieces(){}
 
     int number_of_chessboard;
-    QPixmap pix;
+    QLabel *pLabel;
     bool isChosed;
 };
 
