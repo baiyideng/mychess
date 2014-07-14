@@ -221,6 +221,12 @@ void Chessboard::pbStart_on_clicked()
 {
     pbStart->setDisabled(true);
     isLayout = false;
+    if(src_NumberOfChessPieces != OUT_OF_CHESSPIECES)
+    {
+        ChessPiecesList[src_NumberOfChessPieces]->isChosed = false;
+        src_NumberOfChessPieces = OUT_OF_CHESSPIECES;
+        isChoseSrc = true;
+    }
     __saveInstantane();
     pbRevoke->setEnabled(true);
 }
