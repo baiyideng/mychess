@@ -55,6 +55,7 @@ Chessboard::Chessboard(QWidget *parent) :
     isLayout = true;
     isChoseSrc = true;
     whoseTurn = OUT_OF_PLAYER;
+    src_NumberOfChessPieces = OUT_OF_CHESSPIECES;
 
     connect(peInputNumber,SIGNAL(textChanged(QString)),this,SLOT(peInputNumber_text_changed(QString)));
     connect(pbStart,SIGNAL(clicked()),this,SLOT(pbStart_on_clicked()));
@@ -88,8 +89,6 @@ void Chessboard::paintEvent(QPaintEvent *)
     painter.drawLine(0, 200, 250, 200);
     painter.drawLine(0, 250, 250, 250);
 
-    QPalette pal;
-    pal.setColor(QPalette::Background, Qt::red);
 
     for(int i = 0;i<12;i++)
     {      
@@ -103,12 +102,12 @@ void Chessboard::paintEvent(QPaintEvent *)
 
             if(i < 6)
             {
-                ChessPiecesList[i]->pLabel->setStyleSheet("background:blue;");
+                ChessPiecesList[i]->pLabel->setStyleSheet("background:red;");
                 ChessPiecesList[i]->pLabel->setText(QString::number(i+1));
             }
             else if (i > 5)
             {
-                ChessPiecesList[i]->pLabel->setStyleSheet("background:red;");
+                ChessPiecesList[i]->pLabel->setStyleSheet("background:blue;");
                 ChessPiecesList[i]->pLabel->setText(QString::number(i-5));
             }
 
@@ -131,7 +130,7 @@ void Chessboard::mousePressEvent(QMouseEvent *m)
 
     static  int this_number = OUT_OF_CHESSBOARD;
 
-    if(m->button() == Qt::LeftButton)//鼠标点击函数!!!!外层可嵌套一个if循环bool判断敌走还是我走，敌走调用智能下棋函数
+    if(m->button() == Qt::LeftButton)
     {
         if(m->pos().x()<=250&&m->pos().y()<=250)  //选择棋盘的点不响应
         {
@@ -159,7 +158,7 @@ void Chessboard::mousePressEvent(QMouseEvent *m)
                 }
                 else
                 {
-                    moveChessPieces(this_number);
+                    moveChessPieces(src_NumberOfChessPieces,this_number);
 
                     laws.updatePuzzles(ChessPiecesList);
                     int winer;
@@ -178,12 +177,12 @@ void Chessboard::mousePressEvent(QMouseEvent *m)
 
 }
 
-void Chessboard::moveChessPieces( int des_chessboard_number)
+void Chessboard::moveChessPieces(int &src_chessboard_number, int &des_chessboard_number)
 {
     __saveInstantane();
     laws.updatePuzzles(ChessPiecesList);
 
-    if(laws.isLegitimacy(ChessPiecesList[src_NumberOfChessPieces]->number_of_chessboard,des_chessboard_number))
+    if(laws.isLegitimacy(ChessPiecesList[src_chessboard_number]->number_of_chessboard,des_chessboard_number))
     {
         __saveInstantane();
         int des_chessPieces_number = OUT_OF_CHESSPIECES;
@@ -192,17 +191,17 @@ void Chessboard::moveChessPieces( int des_chessboard_number)
             ChessPiecesList[des_chessPieces_number]->number_of_chessboard = OUT_OF_CHESSBOARD;
         }
 
-        ChessPiecesList[src_NumberOfChessPieces]->number_of_chessboard = des_chessboard_number;
+        ChessPiecesList[src_chessboard_number]->number_of_chessboard = des_chessboard_number;
         if(whoseTurn == RED)
             whoseTurn = BLUE;
         else if(whoseTurn == BLUE)
             whoseTurn = RED;
     }
 
-    if(src_NumberOfChessPieces != OUT_OF_CHESSPIECES)
-        ChessPiecesList[src_NumberOfChessPieces]->isChosed = false;
+    if(src_chessboard_number != OUT_OF_CHESSPIECES)
+        ChessPiecesList[src_chessboard_number]->isChosed = false;
 
-    src_NumberOfChessPieces = OUT_OF_CHESSPIECES;
+    src_chessboard_number = OUT_OF_CHESSPIECES;
     isChoseSrc = true;
 }
 
@@ -244,6 +243,7 @@ void Chessboard::pbRevoke_on_clicked()
 void Chessboard::pbReset_on_clicked()
 {
     pbStart->setEnabled(true);
+    pbRevoke->setDisabled(true);
     isLayout = true;
     isChoseSrc = true;
     whoseTurn = OUT_OF_PLAYER;
@@ -291,7 +291,7 @@ void Chessboard::peInputNumber_text_changed(QString str)
 }
 
 
-bool Chessboard::__isHomochromy(int src_chessPieces_number, int des_chessPieces_number)
+bool Chessboard::__isHomochromy(int &src_chessPieces_number, int &des_chessPieces_number) const
 {
     if((0 <= src_chessPieces_number && src_chessPieces_number < 6 && \
         0 <= des_chessPieces_number && des_chessPieces_number <6) \
@@ -302,7 +302,7 @@ bool Chessboard::__isHomochromy(int src_chessPieces_number, int des_chessPieces_
     else return false;
 }
 
-bool Chessboard::__hasChessPieces(int chessboard_number, int &ret_chessPieces_number)
+bool Chessboard::__hasChessPieces(int &chessboard_number, int &ret_chessPieces_number)
 {
     for(int i = 0; i < 12; i++)
     {

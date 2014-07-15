@@ -34,7 +34,7 @@ class Chessboard : public QWidget
 public:
     explicit Chessboard(QWidget *parent = 0);
     virtual ~Chessboard();
-    void moveChessPieces(int des_chessboard_number);
+    void moveChessPieces(int &src_chessboard_number, int &des_chessboard_number);
     void paintEvent(QPaintEvent *);
     void mousePressEvent(QMouseEvent *m);  //mousemoveevent为鼠标拖拽函数
 
@@ -59,8 +59,8 @@ public slots:
     void peInputNumber_text_changed(QString str);
 
 private:
-    bool __isHomochromy(int src_chessPieces_number,int des_chessPieces_number);
-    bool __hasChessPieces(int chessboard_number , int &ret_chessPieces_number);
+    bool __isHomochromy(int &src_chessPieces_number,int &des_chessPieces_number) const;
+    bool __hasChessPieces(int &chessboard_number , int &ret_chessPieces_number);
     bool __isMyTurn();
 
     void moveChessPieces_Layout(int des_chessPieces_number);
