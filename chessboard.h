@@ -28,6 +28,8 @@
 #include "chesspieces.h"
 #include"laws.h"
 
+#include "chessai.h"
+
 class Chessboard : public QWidget
 {
     Q_OBJECT
@@ -56,7 +58,10 @@ public slots:
     void pbRevoke_on_clicked();
     void pbReset_on_clicked();
     void pbAI_on_clicked();
+    void pbRand_on_clicked();
     void peInputNumber_text_changed(QString str);
+
+    void slotAI(int src,int dest);
 
 private:
     bool __isHomochromy(int &src_chessPieces_number,int &des_chessPieces_number) const;
@@ -83,10 +88,15 @@ private:
     QPushButton* pbStart;
     QPushButton* pbRevoke;
     QPushButton* pbReset;
+
     int lastStatus[12];
+    int lastLayout[12];
 
     QLineEdit* peInputNumber;
     QPushButton* pbAI;
+    QPushButton* pbRand;
+
+    ChessAI *ai;
 };
 
 #endif // CHESSBOARD_H

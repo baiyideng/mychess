@@ -4,7 +4,7 @@
 
 Laws::Laws()
 {
-    puzzles[25] = {NULLPIECES};
+//    puzzles[25] = {NULLPIECES};
 }
 
 bool Laws::isLegitimacy(int src, int des)

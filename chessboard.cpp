@@ -10,6 +10,7 @@
 #include<QtWidgets/QMessageBox>
 #include <QPalette>
 #include <QFont>
+#include<QTime>
 
 
 Chessboard::Chessboard(QWidget *parent) :
@@ -43,11 +44,17 @@ Chessboard::Chessboard(QWidget *parent) :
     pbReset = new QPushButton(this);
     pbReset->setText(QString::fromUtf8("新一局"));
     pbReset->setGeometry(300,150,50,25);
+    pbReset->setDisabled(true);
 
     pbAI = new QPushButton(this);
     pbAI->setText(QString::fromUtf8("行棋"));
     pbAI->setGeometry(150,300,50,25);
     pbAI->setEnabled(false);
+
+    pbRand = new QPushButton(this);
+    pbRand->setText(QString::fromUtf8("骰子"));
+    pbRand->setGeometry(250,300,50,25);
+    pbRand->setEnabled(true);
 
     peInputNumber = new QLineEdit(this);
     peInputNumber->setGeometry(50,300,50,25);
@@ -57,11 +64,16 @@ Chessboard::Chessboard(QWidget *parent) :
     whoseTurn = OUT_OF_PLAYER;
     src_NumberOfChessPieces = OUT_OF_CHESSPIECES;
 
+    ai=new ChessAI();
+
     connect(peInputNumber,SIGNAL(textChanged(QString)),this,SLOT(peInputNumber_text_changed(QString)));
     connect(pbStart,SIGNAL(clicked()),this,SLOT(pbStart_on_clicked()));
     connect(pbRevoke,SIGNAL(clicked()),this,SLOT(pbRevoke_on_clicked()));
     connect(pbReset,SIGNAL(clicked()),this,SLOT(pbReset_on_clicked()));
     connect(pbAI,SIGNAL(clicked()),this,SLOT(pbAI_on_clicked()));
+    connect(pbRand,SIGNAL(clicked()),this,SLOT(pbRand_on_clicked()));
+
+    connect(ai,SIGNAL(signalAI(int,int)),this,SLOT(slotAI(int,int)));
 }
 
 Chessboard::~Chessboard()
@@ -160,15 +172,6 @@ void Chessboard::mousePressEvent(QMouseEvent *m)
                 {
                     moveChessPieces(src_NumberOfChessPieces,this_number);
 
-                    laws.updatePuzzles(ChessPiecesList);
-                    int winer;
-                    if(laws.isWin(winer))
-                    {
-                        if(winer == RED)
-                            QMessageBox::information(this,"win","红方获胜",QMessageBox::Ok);
-                        else if(winer == BLUE)
-                            QMessageBox::information(this,"win","蓝方获胜",QMessageBox::Ok);
-                    }
                 }
             }
             this->repaint();  //调用paintvent函数绘图
@@ -177,32 +180,47 @@ void Chessboard::mousePressEvent(QMouseEvent *m)
 
 }
 
-void Chessboard::moveChessPieces(int &src_chessboard_number, int &des_chessboard_number)
+void Chessboard::moveChessPieces(int &src_chessPieces_number, int &des_chessboard_number)
 {
     __saveInstantane();
     laws.updatePuzzles(ChessPiecesList);
 
-    if(laws.isLegitimacy(ChessPiecesList[src_chessboard_number]->number_of_chessboard,des_chessboard_number))
+    if(laws.isLegitimacy(ChessPiecesList[src_chessPieces_number]->number_of_chessboard,des_chessboard_number))
     {
         __saveInstantane();
+
         int des_chessPieces_number = OUT_OF_CHESSPIECES;
         if(__hasChessPieces(des_chessboard_number, des_chessPieces_number))
         {
             ChessPiecesList[des_chessPieces_number]->number_of_chessboard = OUT_OF_CHESSBOARD;
         }
+        ChessPiecesList[src_chessPieces_number]->number_of_chessboard = des_chessboard_number;
 
-        ChessPiecesList[src_chessboard_number]->number_of_chessboard = des_chessboard_number;
+
         if(whoseTurn == RED)
             whoseTurn = BLUE;
         else if(whoseTurn == BLUE)
             whoseTurn = RED;
+
+        laws.updatePuzzles(ChessPiecesList);
+        int winer;
+        if(laws.isWin(winer))
+        {
+            if(winer == RED)
+                QMessageBox::information(this,"win","红方获胜",QMessageBox::Ok);
+            else if(winer == BLUE)
+                QMessageBox::information(this,"win","蓝方获胜",QMessageBox::Ok);
+        }
     }
 
-    if(src_chessboard_number != OUT_OF_CHESSPIECES)
-        ChessPiecesList[src_chessboard_number]->isChosed = false;
+    if(src_chessPieces_number != OUT_OF_CHESSPIECES)
+        ChessPiecesList[src_chessPieces_number]->isChosed = false;
 
-    src_chessboard_number = OUT_OF_CHESSPIECES;
+    src_NumberOfChessPieces = OUT_OF_CHESSPIECES;
     isChoseSrc = true;
+
+    pbRevoke->setEnabled(true);
+    peInputNumber->clear();
 }
 
 
@@ -219,7 +237,11 @@ void Chessboard::moveChessPieces_Layout(int des_chessPieces_number)
 void Chessboard::pbStart_on_clicked()
 {
     pbStart->setDisabled(true);
+    pbReset->setEnabled(true);
+    pbRevoke->setDisabled(true);
     isLayout = false;
+    for(int i = 0; i < 12; i++) lastLayout[i] = ChessPiecesList[i]->number_of_chessboard;
+
     if(src_NumberOfChessPieces != OUT_OF_CHESSPIECES)
     {
         ChessPiecesList[src_NumberOfChessPieces]->isChosed = false;
@@ -227,7 +249,6 @@ void Chessboard::pbStart_on_clicked()
         isChoseSrc = true;
     }
     __saveInstantane();
-    pbRevoke->setEnabled(true);
 }
 
 void Chessboard::pbRevoke_on_clicked()
@@ -238,6 +259,8 @@ void Chessboard::pbRevoke_on_clicked()
     isChoseSrc = true;
 
     __recoverFromInstantane();
+
+    pbRevoke->setDisabled(true);
 }
 
 void Chessboard::pbReset_on_clicked()
@@ -247,23 +270,11 @@ void Chessboard::pbReset_on_clicked()
     isLayout = true;
     isChoseSrc = true;
     whoseTurn = OUT_OF_PLAYER;
-
-
-    ChessPiecesList[0]->number_of_chessboard = 0;
-    ChessPiecesList[1]->number_of_chessboard = 1;
-    ChessPiecesList[2]->number_of_chessboard = 5;
-    ChessPiecesList[3]->number_of_chessboard = 2;
-    ChessPiecesList[4]->number_of_chessboard = 6;
-    ChessPiecesList[5]->number_of_chessboard = 10;
-
-    ChessPiecesList[6]->number_of_chessboard = 24;
-    ChessPiecesList[7]->number_of_chessboard = 23;
-    ChessPiecesList[8]->number_of_chessboard = 19;
-    ChessPiecesList[9]->number_of_chessboard = 22;
-    ChessPiecesList[10]->number_of_chessboard = 18;
-    ChessPiecesList[11]->number_of_chessboard = 14;
-    for(int i = 0; i < 12; i++) ChessPiecesList[i]->isChosed = false;
-
+    for(int i = 0; i < 12; i++)
+    {
+        ChessPiecesList[i]->number_of_chessboard = lastLayout[i];
+        ChessPiecesList[i]->isChosed = false;
+    }
     this->repaint();
 }
 
@@ -271,6 +282,24 @@ void Chessboard::pbAI_on_clicked()
 {
     int number = peInputNumber->text().toInt();
     peInputNumber_text_changed(0);
+
+    int positions[12];
+    for(int i=0;i<12;i++)
+    {
+        positions[i] = ChessPiecesList[i]->number_of_chessboard;
+    }
+
+    ai->slotAI(number,positions);
+
+}
+
+void Chessboard::pbRand_on_clicked()
+{
+    QTime time;
+    time= QTime::currentTime();
+    qsrand(time.msec()+time.second()*1000);
+    int randVal=qrand()%6 + 1;
+    peInputNumber->setText(QString::number(randVal));
 }
 
 void Chessboard::peInputNumber_text_changed(QString str)
@@ -288,6 +317,12 @@ void Chessboard::peInputNumber_text_changed(QString str)
         peInputNumber->setText(str);
         pbAI->setEnabled(true);
     }
+    if(whoseTurn != RED) pbAI->setDisabled(true);
+}
+
+void Chessboard::slotAI(int src, int dest)
+{
+    moveChessPieces(src,dest);
 }
 
 
